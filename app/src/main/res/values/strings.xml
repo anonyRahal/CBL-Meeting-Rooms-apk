@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">CBL_Teams_Rooms</string>
+    <string name="meet_now">Meet Now</string>
+    <string name="dial_pad">Dial Pad\n</string>
+    <string name="more_btn">more</string>
+    <string name="edit_settings">edit_settings\n</string>
+    <string name="toggle_fullscreen">toggle_fullscreen</string>
+</resources>

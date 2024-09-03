@@ -1,0 +1,10 @@
+{
+  "auth_client_id": "16c5ef43-7310-4f46-abfc-89858a171b10",
+  "auth_tenant_id": "d1f10aba-7a7e-4c41-92ae-10c2c053f6f1",
+  "auth_authority": "https://login.microsoftonline.com/d1f10aba-7a7e-4c41-92ae-10c2c053f6f1",
+  "redirect_uri": "your-app://auth",
+  "client_secret": "nLF8Q~dn8PMh5-Xl.fMbaqC2HLm4JvkNftF8UbiF",
+  "scopes": [
+    "https://graph.microsoft.com/.default"
+  ]
+}
