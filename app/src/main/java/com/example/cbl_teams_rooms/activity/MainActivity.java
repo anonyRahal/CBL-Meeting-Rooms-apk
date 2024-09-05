@@ -36,6 +36,9 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 
 import com.google.gson.Gson;
@@ -67,6 +70,9 @@ public class MainActivity extends AppCompatActivity implements MeetingRoomDialog
     private LottieAnimationView meetingsLoading ;
     private TextView noMeetingTodayMsg;
     private TextView currentMeetingMsg;
+    private ScheduledExecutorService scheduler;
+    private String currentRoomEmail ="meetingroom_IT.cbl@cbllk.com";
+
 
     private final Runnable updateTimeRunnable = new Runnable() {
         @Override
@@ -81,15 +87,7 @@ public class MainActivity extends AppCompatActivity implements MeetingRoomDialog
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        String startDateTime = "2024-09-02T10:30:00.0000000";
-        String startTimeZone = "UTC";
-        String endDateTime = "2024-09-02T11:30:00.0000000";
-        String endTimeZone = "UTC";
-
-        // Convert and format the times
-        String formattedTime = formatTime(startDateTime, startTimeZone, endDateTime, endTimeZone);
-        Log.d(TAG, "test date: " + formattedTime);
-
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
         if (getSupportActionBar() != null) {
             getSupportActionBar().hide();
@@ -128,20 +126,44 @@ public class MainActivity extends AppCompatActivity implements MeetingRoomDialog
         meetingRoomSelectButton.setVisibility(View.GONE);
 
         updateButtonVisibility();
-        fetchTodayMeetings("meetingroom.cble@cbllk.com");
+        fetchTodayMeetings("meetingroom_IT.cbl@cbllk.com");
 
+        scheduler = Executors.newScheduledThreadPool(1);
+        startPolling();
 
         updateDate();
         updateTime();
 
         handler.post(updateTimeRunnable);
-
-
         editSettingsButton.setOnClickListener(v-> openLoginPage());
         adminLogoutButton.setOnClickListener(v -> logout());
         meetingRoomSelectButton.setOnClickListener(v-> showMeetingRoomDialog());
         toggleFullScreenButton.setOnClickListener(v -> toggleFullscreen());
 
+
+    }
+
+
+    private void startPolling() {
+        scheduler.scheduleWithFixedDelay(() -> {
+            runOnUiThread(() -> {
+                try {
+                    fetchTodayMeetings(currentRoomEmail); // Fetch meetings
+                    Log.d(TAG, "startPolling: "+currentRoomEmail);
+                } catch (Exception e) {
+                    Log.e(TAG, "Error fetching meetings", e);
+                }
+            });
+        }, 0, 5, TimeUnit.SECONDS); // Initial delay of 0, then every 30 seconds
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (scheduler != null && !scheduler.isShutdown()) {
+            scheduler.shutdown();
+        }
+        getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
     }
 
@@ -167,7 +189,6 @@ public class MainActivity extends AppCompatActivity implements MeetingRoomDialog
             toggleFullScreenButton.setImageResource(R.drawable.fullscreen_exit_24px); // Change icon to exit fullscreen icon
         }
     }
-
 
     private void updateButtonVisibility() {
         boolean isLoggedIn = checkLoginStatus();
@@ -202,6 +223,8 @@ public class MainActivity extends AppCompatActivity implements MeetingRoomDialog
     public void onRoomSelected(String roomEmail,String displayName) {
         noMeetingTodayMsg.setVisibility(View.GONE);
         currentMeetingMsg.setVisibility(View.GONE);
+        Log.d(TAG, "onRoomSelected: "+roomEmail);
+        currentRoomEmail = roomEmail;
         fetchTodayMeetings(roomEmail);
         meetingRoomText.setText(displayName);
 
@@ -377,6 +400,7 @@ public class MainActivity extends AppCompatActivity implements MeetingRoomDialog
 
             // Check if this meeting is ongoing
             if (isOngoingMeeting(startDateTime, endDateTime, startTimeZone, endTimeZone, now)) {
+                currentMeetingMsg.setVisibility(View.GONE);
                 return meetingObject; // Return the first ongoing meeting found
             }
         }
@@ -401,7 +425,6 @@ public class MainActivity extends AppCompatActivity implements MeetingRoomDialog
 
         Log.d(TAG, "start: " + start);
         Log.d(TAG, "end: " + end);
-
 
 
         // Get today's date at midnight for comparison
